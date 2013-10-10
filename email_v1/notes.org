@@ -1,0 +1,17 @@
+Email Indexing
+
+* Goals
+** Searchable email system
+* Indexing Process
+** Parsing of maildir-format messages
+   + Transform into TREC TEXT format
+   + Fields:
+	 + Message-ID
+	 + Date
+	 + From
+	 + To
+	 + Cc
+	 + Subject
+* Retrieval
+** Q: Is it possible to have threads in results?
+** Should the individual emails be displayed in Emacs/Wanderlust?
