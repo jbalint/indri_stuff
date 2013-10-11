@@ -1,0 +1,7 @@
+<parameters>
+  <index>email_v1_index</index>
+  <query>
+	<number>x</number>
+	<text>fabric jdbc</text>
+  </query>
+</parameters>

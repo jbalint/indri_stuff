@@ -34,6 +34,12 @@ sub write_field {
 	$writer->endTag($fieldName);
 }
 
+my $account = $indir;
+$account =~ s/.*\/(.*?)\/.*?$/$1/g; # second to last path element
+
+my $folderName = $indir;
+$folderName =~ s/.*\///g; # last path element
+
 my $mgr = Mail::Box::Manager->new;
 my $folder = $mgr->open(folder => $indir);
 foreach my $msg ($folder->messages) {
@@ -46,6 +52,7 @@ foreach my $msg ($folder->messages) {
 	my $date = strftime("%a %b %e %H:%M:%S %Y", localtime($msg->timestamp));
 	my $msgId = $msg->messageId;
 	my $body = $msg->decoded;
+
 	if (0) {
 		print "-------------------------------\n";
 		print "SUBJ: ", $subject, "\n";
@@ -73,6 +80,8 @@ foreach my $msg ($folder->messages) {
 	write_field($writer, "DATE", $date);
 	write_field($writer, "MESSAGE-ID", $msgId);
 	write_field($writer, "TEXT", $body);
+	write_field($writer, "FOLDER", $folderName);
+	write_field($writer, "ACCOUNT", $account);
 
 	$writer->endTag("DOC");
 	$writer->end;

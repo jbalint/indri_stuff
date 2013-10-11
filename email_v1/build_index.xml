@@ -13,4 +13,6 @@
   <field><name>to</name></field>
   <field><name>cc</name></field>
   <field><name>date</name></field>
+  <field><name>folder</name></field>
+  <field><name>account</name></field>
 </parameters>
