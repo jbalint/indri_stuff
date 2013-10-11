@@ -1,0 +1,16 @@
+<parameters>
+  <memory>200m</memory>
+  <index>email_v1_index</index>
+  <stemmer>
+	<name>krovetz</name>
+  </stemmer>
+  <corpus>
+	<path>tmp</path>
+	<class>trectext</class>
+  </corpus>
+  <field><name>title</name></field>
+  <field><name>from</name></field>
+  <field><name>to</name></field>
+  <field><name>cc</name></field>
+  <field><name>date</name></field>
+</parameters>
