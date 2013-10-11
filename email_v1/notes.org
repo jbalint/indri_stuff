@@ -12,6 +12,9 @@ Email Indexing
 	 + To
 	 + Cc
 	 + Subject
+** Need separate db to store non-text data
 * Retrieval
 ** Q: Is it possible to have threads in results?
 ** Should the individual emails be displayed in Emacs/Wanderlust?
+* Results Presentation
+** Retrieve info from non-text db

@@ -49,19 +49,19 @@ foreach my $msg ($folder->messages) {
 	my $from = x([$msg->from]);
 	my $to = x([$msg->to]);
 	my $cc = x([$msg->cc]);
-	my $date = strftime("%a %b %e %H:%M:%S %Y", localtime($msg->timestamp));
+	my $date = strftime('%a %b %e %H:%M:%S %Y', localtime($msg->timestamp));
 	my $msgId = $msg->messageId;
 	my $body = $msg->decoded;
 
 	if (0) {
-		print "-------------------------------\n";
-		print "SUBJ: ", $subject, "\n";
-		print "FROM: ", $from, "\n";
-		print "TO: ", $to, "\n";
-		print "CC: ", $cc, "\n";
-		print "DATE: ", $date, "\n";
-		print "MESSAGE-ID: ", $msgId, "\n";
-		print "BODY: ", $body, "\n";
+		print '-------------------------------\n';
+		print 'SUBJ: ', $subject, '\n';
+		print 'FROM: ', $from, '\n';
+		print 'TO: ', $to, '\n';
+		print 'CC: ', $cc, '\n';
+		print 'DATE: ', $date, '\n';
+		print 'MESSAGE-ID: ', $msgId, '\n';
+		print 'BODY: ', $body, '\n';
 	}
 
 	my $filename = $msgId;
@@ -72,16 +72,42 @@ foreach my $msg ($folder->messages) {
 								  DATA_MODE => 1);
 	$writer->startTag("DOC");
 
-	write_field($writer, "DOCNO", $filename);
-	write_field($writer, "TITLE", $subject);
-	write_field($writer, "FROM", $from);
-	write_field($writer, "TO", $to);
-	write_field($writer, "CC", $cc);
-	write_field($writer, "DATE", $date);
-	write_field($writer, "MESSAGE-ID", $msgId);
-	write_field($writer, "TEXT", $body);
-	write_field($writer, "FOLDER", $folderName);
-	write_field($writer, "ACCOUNT", $account);
+	write_field($writer, 'DOCNO', $filename);
+	write_field($writer, 'TITLE', $subject);
+	write_field($writer, 'FROM', $from);
+	write_field($writer, 'TO', $to);
+	write_field($writer, 'CC', $cc);
+	write_field($writer, 'DATE', $date);
+	write_field($writer, 'MESSAGE-ID', $msgId);
+	write_field($writer, 'TEXT', $body);
+	write_field($writer, 'FOLDER', $folderName);
+	write_field($writer, 'ACCOUNT', $account);
+
+	my @kc = ('kchashmgr', 'set', 'email_v1.kch', 'xyz', 'xyz');
+	$kc[3] = "$filename.TITLE";
+	$kc[4] = $subject;
+	system(@kc);
+	$kc[3] = "$filename.FROM";
+	$kc[4] = $from;
+	system(@kc);
+	$kc[3] = "$filename.TO";
+	$kc[4] = $to;
+	system(@kc);
+	$kc[3] = "$filename.CC";
+	$kc[4] = $cc;
+	system(@kc);
+	$kc[3] = "$filename.DATE";
+	$kc[4] = $date;
+	system(@kc);
+	$kc[3] = "$filename.MESSAGE-ID";
+	$kc[4] = $msgId;
+	system(@kc);
+	$kc[3] = "$filename.FOLDER";
+	$kc[4] = $folderName;
+	system(@kc);
+	$kc[3] = "$filename.ACCOUNT";
+	$kc[4] = $account;
+	system(@kc);
 
 	$writer->endTag("DOC");
 	$writer->end;
