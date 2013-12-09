@@ -1,0 +1,16 @@
+Org-Mode Indexing & Retrieval
+
+* Indexing
+** TREC Format
+   Org-mode files will be exported to TREC format for indexing
+*** Date-oriented format
+	Many files are organized by date. One example is work-log files.
+	+ Top-level headings are date entries
+	  + These should be considered "documents"
+*** General format
+*** Meta-data
+	+ Filename (full path for now)
+*** Limitations/issues
+	+ Would be convenient to have line numbers or headings to refer back to
+* Searching
+** Basic search
