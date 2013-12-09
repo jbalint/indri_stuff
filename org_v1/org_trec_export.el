@@ -1,26 +1,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Org mode export to TREC format ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun org-trec-escape (data)
+  "Escape data to be put into the TREC format"
+  data)
+
 ;; boring, undecorated stuff
 (defun org-trec-export-raw (element contents info)
-  contents)
+  (org-trec-escape contents))
 (defun org-trec-export-value (element contents info)
-  (org-element-property :value element))
+  (org-trec-escape (org-element-property :value element)))
 
 (defun org-trec-link (link desc info)
-  desc)
+  (org-trec-escape
+   (concat desc " <" (org-element-property :raw-link link) ">")))
 (defun org-trec-plain-text (text info)
-  text)
+  (org-trec-escape text))
 ;; i don't often use it in this context...
 (defun org-trec-subscript (element contents info)
-  (concat "_" contents))
+  (org-trec-escape (concat "_" contents)))
 
 ;; other stuff
 (defun org-trec-headline (headline contents info)
  ;;(with-output-to-string (princ (org-element-property :title headline)))
-  (concat (org-export-data (org-element-property :title headline) info) "\n" contents
+  (org-trec-escape
+   (concat (org-export-data (org-element-property :title headline) info) "\n" contents
 		  ;;(with-output-to-string (princ (org-element-contents headline)))
-		  )
+		   ))
 )
 
 (defun org-trec-planning (planning contents info)
@@ -32,14 +38,16 @@
 	(if deadline
 		(concat "Deadline: " (org-timestamp-to-date-string deadline))
 	  (if scheduled
-		  (concat "scheduled: " (org-timestamp-to-date-string scheduled))
+		  (concat "Scheduled: " (org-timestamp-to-date-string scheduled))
 		(if closed
-			(concat "closed: " (org-timestamp-to-date-string closed)))))))
+			(concat "Closed: " (org-timestamp-to-date-string closed)))))))
 
 (defun org-trec-section (section contents info)
-  ;; TODO put this with the output
-  ;;(message (concat "Section category: " (org-export-get-category section info)))
-  contents)
+  ;; TODO this is a bit limiting, it implies all docs have a beginning
+  ;; "section" to set the title
+  (if (= 1 (org-element-property :begin section))
+	  (concat "<TITLE>" contents "</TITLE>\n<TEXT>\n")
+	contents))
 
 (defun org-timestamp-to-date-string (timestamp)
   "Convert an Org mode timestamp object to a string with time if given. e.g. 2013-01-01 10:13"
@@ -55,6 +63,10 @@
 				(number-to-string (org-element-property :minute-start timestamp)))
 	  date-part)))
 
+(defun org-trec-template (contents info)
+  "Wrap the complete exported contents"
+  (concat "<DOC>\n" contents "</TEXT>\n</DOC>"))
+
 ;; http://orgmode.org/worg/dev/org-export-reference.html
 ;; c.f. org-export-registered-backends
 (when (require 'ox nil 'noerror)
@@ -62,7 +74,7 @@
    'trec
    '((bold . org-trec-export-raw)
 	 (center-block . org-trec-export-raw)
-	 (clock . nil)
+	 (clock . org-trec-export-raw)
 	 (code . org-trec-export-value)
 	 (comment . nil)
 	 (comment-block . nil)
@@ -104,7 +116,7 @@
 	 (table-cell . nil)
 	 (table-row . nil)
 	 (target . nil)
-	 (template . nil)
+	 (template . org-trec-template)
 	 (timestamp . org-trec-export-raw)
 	 (underline . org-trec-export-raw)
 	 (verbatim . org-trec-export-value)
