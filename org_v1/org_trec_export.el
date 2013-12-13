@@ -94,12 +94,19 @@ For example, (fold F X '(1 2 3)) computes (F (F (F X 1) 2) 3)."
 
 (defun org-trec-template (contents info)
   "Wrap the complete exported contents"
-  (let ((filename-element
+  (let ((docno-element ;; TODO come up with a good docno scheme
+		 (concat
+		  "<DOCNO>"
+		  (org-trec-escape buffer-file-name)
+		  "</DOCNO>\n"))
+		(filename-element
 		 (concat
 		  "<FILENAME>"
 		  (org-trec-escape buffer-file-name)
 		  "</FILENAME>\n")))
-	(concat "<DOC>\n" filename-element contents "</TEXT>\n</DOC>")))
+	(concat "<DOC>\n"
+			docno-element filename-element contents
+			"</TEXT>\n</DOC>")))
 
 ;; http://orgmode.org/worg/dev/org-export-reference.html
 ;; c.f. org-export-registered-backends

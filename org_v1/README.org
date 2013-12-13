@@ -12,5 +12,15 @@ Org-Mode Indexing & Retrieval
 	+ Filename (full path for now)
 *** Limitations/issues
 	+ Would be convenient to have line numbers or headings to refer back to
+** Queryable Data
+   + Title
+   + Text
+   + Filename
 * Searching
+  SCHEDULED: <2013-12-09 Mon>
 ** Basic search
+   a
+* Continuing work
+** Make sure to escape any XML
+* Test data
+  + [[http://orgmode.org/worg/dev/org-export-reference.html][Some docs]]
