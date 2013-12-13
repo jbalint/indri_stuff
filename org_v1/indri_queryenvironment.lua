@@ -6,9 +6,28 @@ QueryResult.mt = { __index = QueryResult, classname = "QueryResult" }
 
 function QueryResult.new(qe, qaptr)
    local self = {}
+   setmetatable(self, QueryResult.mt)
    self.qe = qe
    self.qaptr = qaptr
+   self.resultPosition = 0
    return self
+end
+
+function QueryResult:nextRawEntry()
+   local res = indri_qa_get_complete_result_entry(self.qe.qeptr,
+												  self.qaptr,
+												  self.resultPosition)
+   self.resultPosition = self.resultPosition + 1
+   return res
+end
+
+function QueryResult:rawIterator(maxResults)
+   return function ()
+	  if maxResults > 0 then
+		 maxResults = maxResults - 1
+		 return self:nextRawEntry()
+	  end
+   end
 end
 
 if not QueryEnvironment then QueryEnvironment = {} end

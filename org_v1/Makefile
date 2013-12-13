@@ -3,10 +3,10 @@ PREFIX=/home/jbalint/lib
 # my local copy is built from SVN on sourceforge
 INDRI_HOME=/home/jbalint
 
-#LUA_HOME=
+#LUA_HOME=/usr
 
 #CXXFLAGS += -Wall
-CXXFLAGS += -I$(LUA_HOME) -DLUA_USE_APICHECK
+CXXFLAGS += -I$(LUA_HOME)/include -DLUA_USE_APICHECK
 CXXFLAGS += -I$(INDRI_HOME)/include
 CXXFLAGS += -W
 
@@ -17,7 +17,7 @@ LDFLAGS += -L$(INDRI_HOME)/lib
 
 libluaindri.so: indri.cpp
 	$(CXX) $(CXXFLAGS) -c -fpic -ggdb3 -D_GNU_C_SOURCE -o indri.o indri.cpp
-	$(CXX) $(LDFLAGS) -shared -Wl,-soname,libluaindri.so -o libluaindri.so indri.o -lindri -llua -lz -lpthread
+	$(CXX) $(LDFLAGS) -shared -Wl,-soname,libluaindri.so -o libluaindri.so indri.o -lindri -lz -lpthread -llua
 
 install: libluaindri.so
 	cp libluaindri.so $(PREFIX)/lib
