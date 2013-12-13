@@ -135,6 +135,16 @@ int indri_qa_get_complete_result_entry(lua_State *L)
   return 1;
 }
 
+extern "C"
+int indri_qa_result_count(lua_State *L)
+{
+  QueryAnnotation *qa = (QueryAnnotation *) lua_touserdata(L, -1);
+  assert(lua_islightuserdata(L, -1));
+  lua_pop(L, 1);
+  lua_pushinteger(L, qa->getResults().size());
+  return 1;
+}
+
 /* not sure what is correct/necessary here */
 /*LUALIB_API*/ extern "C"
 int luaopen_libluaindri(lua_State *L)
@@ -144,5 +154,6 @@ int luaopen_libluaindri(lua_State *L)
   lua_register(L, "indri_qe_add_index", indri_qe_add_index);
   lua_register(L, "indri_qe_run_annotated_query", indri_qe_run_annotated_query);
   lua_register(L, "indri_qa_get_complete_result_entry", indri_qa_get_complete_result_entry);
+  lua_register(L, "indri_qa_result_count", indri_qa_result_count);
   return 0;
 }

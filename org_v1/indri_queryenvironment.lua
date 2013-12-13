@@ -13,10 +13,15 @@ function QueryResult.new(qe, qaptr)
    return self
 end
 
+function QueryResult:resultCount()
+   return indri_qa_result_count(self.qaptr)
+end
+
 function QueryResult:nextRawEntry()
    local res = indri_qa_get_complete_result_entry(self.qe.qeptr,
 												  self.qaptr,
 												  self.resultPosition)
+   res.position = self.resultPosition
    self.resultPosition = self.resultPosition + 1
    return res
 end
