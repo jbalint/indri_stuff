@@ -85,6 +85,31 @@ int indri_qa_get_complete_result_entry(lua_State *L)
   // lua_pushstring(L, pdocs[0]->text);
   // lua_setfield(L, -2, "text");
 
+  // this is all... in need of clarification
+  // are fields stored verbatim???
+  std::vector<DocumentVector::Field> docFields = docVecs[0]->fields();
+  std::vector<std::string> docStems = docVecs[0]->stems();
+  std::vector<int> docPositions = docVecs[0]->positions();
+  for (int i = 0; i < docFields.size(); ++i)
+  {
+	DocumentVector::Field field = docFields[i];
+	luaL_Buffer val;
+	luaL_buffinit(L, &val);
+
+	// we have to go through and reconstruct the value from the terms/stems
+	luaL_addstring(&val, docStems[docPositions[field.begin]].c_str());
+	for (int j = field.begin + 1; j < field.end; ++j)
+	{
+	  if (!strcmp(field.name.c_str(), "date"))
+		luaL_addstring(&val, "-");
+	  else
+		luaL_addstring(&val, " ");
+	  luaL_addstring(&val, docStems[docPositions[j]].c_str());
+	}
+	
+	luaL_pushresult(&val);
+	lua_setfield(L, -2, field.name.c_str());
+  }
   return 1;
 }
 
