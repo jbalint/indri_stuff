@@ -6,7 +6,7 @@ local qe = QueryEnvironment.new()
 qe:addIndex("../email_v1_index")
 local qr = qe:query("tonci")
 
-for rawEntry in qr:rawIterator(2) do
+for rawEntry in qr:rawIterator(10) do
    print("Entry:")
    pp(rawEntry)
 end

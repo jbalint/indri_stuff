@@ -10,6 +10,7 @@ extern "C" {
 #include <assert.h>
 
 using namespace indri::api;
+using namespace indri::parse;
 using namespace lemur::api;
 
 extern "C"
@@ -74,6 +75,22 @@ int indri_qa_get_complete_result_entry(lua_State *L)
   std::vector<DocumentVector *> docVecs = qe->documentVectors(docIds);
 
   lua_newtable(L);
+
+  // first metadata fields, DOCNO and TITLE
+  indri::utility::greedy_vector<indri::parse::MetadataPair> metadata = pdocs[0]->metadata;
+  for (int i = 0; i < metadata.size(); ++i)
+  {
+	// if (!strcmp("docno", metadata[i].key) ||
+	// 	!strcmp("title", metadata[i].key))
+	if (!strchr(metadata[i].key, '#'))
+	{
+	  lua_pushstring(L, (const char *) metadata[i].value);
+	  lua_setfield(L, -2, metadata[i].key);
+	}
+  }
+
+  lua_pushinteger(L, docIds[0]);
+  lua_setfield(L, -2, "docid");
   lua_pushnumber(L, extents[0].score);
   lua_setfield(L, -2, "relevance");
   SnippetBuilder builder(true);
@@ -87,29 +104,34 @@ int indri_qa_get_complete_result_entry(lua_State *L)
 
   // this is all... in need of clarification
   // are fields stored verbatim???
-  std::vector<DocumentVector::Field> docFields = docVecs[0]->fields();
-  std::vector<std::string> docStems = docVecs[0]->stems();
-  std::vector<int> docPositions = docVecs[0]->positions();
-  for (int i = 0; i < docFields.size(); ++i)
-  {
-	DocumentVector::Field field = docFields[i];
-	luaL_Buffer val;
-	luaL_buffinit(L, &val);
+  // std::vector<DocumentVector::Field> docFields = docVecs[0]->fields();
+  // std::vector<std::string> docStems = docVecs[0]->stems();
+  // std::vector<int> docPositions = docVecs[0]->positions();
+  // for (int i = 0; i < docFields.size(); ++i)
+  // {
+  // 	DocumentVector::Field field = docFields[i];
+  // 	luaL_Buffer val;
 
-	// we have to go through and reconstruct the value from the terms/stems
-	luaL_addstring(&val, docStems[docPositions[field.begin]].c_str());
-	for (int j = field.begin + 1; j < field.end; ++j)
-	{
-	  if (!strcmp(field.name.c_str(), "date"))
-		luaL_addstring(&val, "-");
-	  else
-		luaL_addstring(&val, " ");
-	  luaL_addstring(&val, docStems[docPositions[j]].c_str());
-	}
+  // 	// populated from metadata
+  // 	if (!strcmp("title", field.name.c_str()))
+  // 	  continue;
+
+  // 	luaL_buffinit(L, &val);
+
+  // 	// we have to go through and reconstruct the value from the terms/stems
+  // 	luaL_addstring(&val, docStems[docPositions[field.begin]].c_str());
+  // 	for (int j = field.begin + 1; j < field.end; ++j)
+  // 	{
+  // 	  if (!strcmp(field.name.c_str(), "date"))
+  // 		luaL_addstring(&val, "-");
+  // 	  else
+  // 		luaL_addstring(&val, " ");
+  // 	  luaL_addstring(&val, docStems[docPositions[j]].c_str());
+  // 	}
 	
-	luaL_pushresult(&val);
-	lua_setfield(L, -2, field.name.c_str());
-  }
+  // 	luaL_pushresult(&val);
+  // 	lua_setfield(L, -2, field.name.c_str());
+  // }
   return 1;
 }
 
