@@ -24,20 +24,20 @@ local maxy, maxx = stdscr:getmaxyx() -- global
 local indexes = {"../email_v1_index"} -- global
 
 function printWithBold(snippet, maxChars)
-   while true do
+   while maxChars > 0 do
 	  local strongPos = snippet:find("<strong>")
 	  -- just print it if it's out of our range
 	  if not strongPos or strongPos >= maxChars then
 		 stdscr:addstr(snippet, maxChars)
-		 snippet = snippet:sub(maxChars)
+		 snippet = snippet:sub(maxChars + 1)
 		 maxChars = 0
 		 break
 	  end
 	  local strongString = snippet:sub(strongPos + #"<strong>")
 	  strongString = strongString:sub(1, strongString:find("</strong>") - 1)
-	  local charsTilStrongEnd = strongPos + #strongString - 1
-	  if charsTilStrongEnd < maxChars then
-		 -- case #1 snippet include bold will fit
+	  local charsTilStrongEnd = (strongPos - 1) + #strongString
+	  if charsTilStrongEnd <= maxChars then
+		 -- case #1 snippet including highlighted string will fit
 		 stdscr:addstr(snippet:sub(1, strongPos - 1))
 		 stdscr:attron(curses.A_BOLD)
 		 stdscr:attron(curses.color_pair(1))
@@ -46,10 +46,10 @@ function printWithBold(snippet, maxChars)
 		 stdscr:attroff(curses.A_BOLD)
 		 maxChars = maxChars - charsTilStrongEnd
 		 snippet = snippet:sub(snippet:find("</strong>") + #"</strong>")
-	  elseif strongPos < maxChars then
+	  else
 		 -- case #2 only snippet without bold will fit
-		 stdscr:addstr(snippet:sub(1, strongPos - 1))
-		 maxChars = maxChars - strongPos
+		 stdscr:addstr(snippet:sub(1, strongPos - 1), maxChars)
+		 maxChars = maxChars - (strongPos - 1)
 		 snippet = snippet:sub(strongPos)
 	  end
    end
@@ -83,7 +83,7 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
 		 snippet = snippet:gsub("&lt;", "<")
 		 snippet = snippet:gsub("&gt;", ">")
 		 snippet = snippet:gsub("&amp;", "&")
-		 local totalChars = maxx - 1 -- chars we have left (rename this var)
+		 local totalChars = maxx -- chars we have left (rename this var)
 		 if entry.position == selectedItem then
 			stdscr:attron(curses.color_pair(3))
 		 end
@@ -97,7 +97,7 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
 
 		 stdscr:addstr("| ")
 		 totalChars = totalChars - 2
-		 snippet = printWithBold(snippet, totalChars)
+		 snippet = printWithBold(snippet, totalChars - 2)
 
 		 if #snippet > 10 then
 			nextLine = string.rep(" ", maxx - totalChars) .. snippet
@@ -157,6 +157,8 @@ function doQuery()
    while true do
 	  local k = stdscr:getch()
 	  local keyname = curses.keyname(k)
+	  -- debug the keyname
+	  --stdscr:mvaddstr(0, 0, string.format("< %s >", keyname))
 	  if keyname == "q" then
 		 break
 	  elseif keyname == "KEY_NPAGE" then
@@ -182,6 +184,8 @@ function doQuery()
 			selectedItem = selectedItem - 1
 			showPage(currentPage, pageMinIndex, qr, selectedItem)
 		 end
+	  elseif keyname == "^J" then
+		 -- TODO display item in separate window
 	  end
    end
 
