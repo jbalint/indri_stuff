@@ -10,6 +10,37 @@ local maxy, maxx = stdscr:getmaxyx()
 
 local indexes = {"../email_v1_index"}
 
+function printWithBold(snippet, maxChars)
+   while true do
+	  local strongPos = snippet:find("<strong>")
+	  -- just print it if it's out of our range
+	  if not strongPos or strongPos >= maxChars then
+		 stdscr:addstr(snippet, maxChars)
+		 snippet = snippet:sub(maxChars)
+		 maxChars = 0
+		 break
+	  end
+	  local strongString = snippet:sub(strongPos + #"<strong>")
+	  strongString = strongString:sub(1, strongString:find("</strong>") - 1)
+	  local charsTilStrongEnd = strongPos + #strongString - 1
+	  if charsTilStrongEnd < maxChars then
+		 -- case #1 snippet include bold will fit
+		 stdscr:addstr(snippet:sub(1, strongPos - 1))
+		 stdscr:attron(curses.A_BOLD)
+		 stdscr:addstr(strongString)
+		 stdscr:attroff(curses.A_BOLD)
+		 maxChars = maxChars - charsTilStrongEnd
+		 snippet = snippet:sub(snippet:find("</strong>") + #"</strong>")
+	  elseif strongPos < maxChars then
+		 -- case #2 only snippet without bold will fit
+		 stdscr:addstr(snippet:sub(1, strongPos - 1))
+		 maxChars = maxChars - strongPos
+		 snippet = snippet:sub(strongPos)
+	  end
+   end
+   return snippet, maxChars
+end
+
 function doQuery()
    -- create query input window
    local qInput = curses.newwin(3, 40, maxy / 2, (maxx / 2) - 20)
@@ -47,28 +78,34 @@ function doQuery()
    for i = 1, maxx do stdscr:addch("-") end
    local nextLine
    for i = 3, maxy - 4 do
+	  stdscr:move(i, 0)
 	  if nextLine then
-		 stdscr:move(i, 0)
-		 stdscr:addstr(nextLine)
+		 printWithBold(nextLine, maxx - 2)
 		 nextLine = nil
 	  else
 		 local entry = qr:nextRawEntry()
+		 if entry == nil then
+			break
+		 end
 		 local snippet = entry.snippet
-		 snippet = snippet:gsub("<strong>...</strong>", "")
+		 snippet = snippet:gsub("<strong>...</strong>", "...")
 		 snippet = snippet:gsub("&lt;", "<")
 		 snippet = snippet:gsub("&gt;", ">")
 		 snippet = snippet:gsub("&amp;", "&")
-		 local totalChars = maxx
-		 stdscr:move(i, 0)
+		 local totalChars = maxx - 1 -- chars we have left (rename this var)
 		 stdscr:addstr(string.format("%4d ", entry.position))
 		 totalChars = totalChars - 5
-		 local titleChars = maxx * 0.3
+		 local titleChars = math.floor(maxx * 0.3)
 		 stdscr:addstr(entry.title, titleChars)
 		 totalChars = totalChars - titleChars
 		 stdscr:move(i, maxx - totalChars)
-		 stdscr:addstr(" | " .. snippet, totalChars)
-		 if #snippet > (totalChars * 1.5) then
-			nextLine = string.format("%" .. (maxx - totalChars) .. "s | %s", "", snippet:sub(totalChars - 2))
+
+		 stdscr:addstr("| ")
+		 totalChars = totalChars - 2
+		 snippet = printWithBold(snippet, totalChars)
+
+		 if #snippet > 10 then
+			nextLine = string.rep(" ", maxx - totalChars) .. snippet
 		 end
 	  end
    end

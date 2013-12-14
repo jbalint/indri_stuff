@@ -9,20 +9,28 @@ function QueryResult.new(qe, qaptr)
    setmetatable(self, QueryResult.mt)
    self.qe = qe
    self.qaptr = qaptr
-   self.resultPosition = 0
+   self.position = 0 -- position in the result set
+   self.count = indri_qa_result_count(self.qaptr)
    return self
 end
 
 function QueryResult:resultCount()
-   return indri_qa_result_count(self.qaptr)
+   return self.count
+end
+
+function QueryResult:resultPosition()
+   return self.position
 end
 
 function QueryResult:nextRawEntry()
+   if self.position >= self.count then
+	  return nil
+   end
    local res = indri_qa_get_complete_result_entry(self.qe.qeptr,
 												  self.qaptr,
-												  self.resultPosition)
-   res.position = self.resultPosition
-   self.resultPosition = self.resultPosition + 1
+												  self.position)
+   res.position = self.position
+   self.position = self.position + 1
    return res
 end
 
