@@ -4,31 +4,24 @@ require("libluaindri") -- C++ wrappers
 if not QueryResult then QueryResult = {} end
 QueryResult.mt = { __index = QueryResult, classname = "QueryResult" }
 
-function QueryResult.new(qe, qaptr)
+function QueryResult.new(qe, qaptr, queryString)
    local self = {}
    setmetatable(self, QueryResult.mt)
    self.qe = qe
    self.qaptr = qaptr
-   self.position = 0 -- position in the result set
+   self.queryString = queryString
+   self.position = 1 -- position in the result set
    self.count = indri_qa_result_count(self.qaptr)
    return self
 end
 
-function QueryResult:resultCount()
-   return self.count
-end
-
-function QueryResult:resultPosition()
-   return self.position
-end
-
 function QueryResult:nextRawEntry()
-   if self.position >= self.count then
+   if self.position > self.count or self.position < 1 then
 	  return nil
    end
    local res = indri_qa_get_complete_result_entry(self.qe.qeptr,
 												  self.qaptr,
-												  self.position)
+												  self.position - 1)
    res.position = self.position
    self.position = self.position + 1
    return res
@@ -65,7 +58,7 @@ end
 
 function QueryEnvironment:query(queryString)
    local qaptr = indri_qe_run_annotated_query(self.qeptr, queryString, 1000)
-   local result = QueryResult.new(self, qaptr)
+   local result = QueryResult.new(self, qaptr, queryString)
    return result
 end
 
