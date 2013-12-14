@@ -162,12 +162,36 @@ function doQuery()
    -- begin indri query
    local qe = QueryEnvironment.new()
    qe:addIndex(indexes[1])
-   local qr = qe:query(queryString)
+   local stat, res = pcall(qe.query, qe, queryString)
+   if not stat then
+	  stdscr:mvaddstr(4, 0, string.format("Error during query: %s", res))
+	  stdscr:mvaddstr(5, 0, "Press any key to continue")
+	  stdscr:refresh()
+	  stdscr:getch()
+	  return
+   end
+   qr = res
 
    -- mapping of page->minResultIndex
    local pageMinIndex = {1}
    local currentPage = 1
    local selectedItem = 1
+
+   local nextPage = function ()
+	  if qr.position < qr.count then
+		 currentPage = currentPage + 1
+		 selectedItem = qr.position
+		 showPage(currentPage, pageMinIndex, qr, selectedItem)
+	  end
+   end
+
+   local prevPage = function ()
+	  if currentPage > 1 then
+		 selectedItem = pageMinIndex[currentPage] - 1
+		 currentPage = currentPage - 1
+		 showPage(currentPage, pageMinIndex, qr, selectedItem)
+	  end
+   end
 
    -- show first page
    showPage(currentPage, pageMinIndex, qr, selectedItem)
@@ -181,27 +205,23 @@ function doQuery()
 	  if keyname == "q" then
 		 break
 	  elseif keyname == "KEY_NPAGE" then
-		 if qr.position < qr.count then
-			currentPage = currentPage + 1
-			selectedItem = qr.position
-			showPage(currentPage, pageMinIndex, qr, selectedItem)
-		 end
+		 nextPage()
 	  elseif keyname == "KEY_PPAGE" then
-		 if currentPage > 1 then
-			currentPage = currentPage - 1
-			selectedItem = pageMinIndex[currentPage]
-			showPage(currentPage, pageMinIndex, qr, selectedItem)
-		 end
+		 prevPage()
 	  elseif keyname == "KEY_DOWN" then
 		 if selectedItem + 1 < qr.position then
 			selectedItem = selectedItem + 1
 			-- redisplaying the whole page, maybe not the most efficient
 			showPage(currentPage, pageMinIndex, qr, selectedItem)
+		 else
+			nextPage()
 		 end
 	  elseif keyname == "KEY_UP" then
 		 if selectedItem > pageMinIndex[currentPage] then
 			selectedItem = selectedItem - 1
 			showPage(currentPage, pageMinIndex, qr, selectedItem)
+		 else
+			prevPage()
 		 end
 	  elseif keyname == "^J" then
 		 -- TODO display item in separate window

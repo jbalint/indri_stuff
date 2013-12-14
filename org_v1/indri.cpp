@@ -52,9 +52,16 @@ int indri_qe_run_annotated_query(lua_State *L)
   QueryAnnotation *qa;
   assert(lua_islightuserdata(L, -3));
   lua_pop(L, 2);
-  qa = qe->runAnnotatedQuery(queryString, resultsRequested);
-  assert(qa);
-  lua_pushlightuserdata(L, qa);
+  try
+  {
+	qa = qe->runAnnotatedQuery(queryString, resultsRequested);
+	assert(qa);
+	lua_pushlightuserdata(L, qa);
+  }
+  catch (lemur::api::Exception ex)
+  {
+	luaL_error(L, "%s", ex.what().c_str());
+  }
   return 1;
 }
 
