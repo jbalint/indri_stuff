@@ -23,8 +23,12 @@ local maxy, maxx = stdscr:getmaxyx() -- global
 
 local indexes = {"../email_v1_index"} -- global
 
+io.output("/tmp/indri_query_debug.txt")
+
 function printWithBold(snippet, maxChars)
    while maxChars > 0 do
+	  io.write(string.format("1: maxChars = %d\n", maxChars))
+	  io.write(string.format("1: snippet = %20s\n", snippet))
 	  local strongPos = snippet:find("<strong>")
 	  -- just print it if it's out of our range
 	  if not strongPos or strongPos >= maxChars then
@@ -33,23 +37,38 @@ function printWithBold(snippet, maxChars)
 		 maxChars = 0
 		 break
 	  end
+
+	  -- first print the non-bold section
+	  stdscr:addstr(snippet:sub(1, strongPos - 1), maxChars)
+	  maxChars = maxChars - (strongPos - 1)
+
+	  -- handle different possibilities of highlighted strings
 	  local strongString = snippet:sub(strongPos + #"<strong>")
 	  strongString = strongString:sub(1, strongString:find("</strong>") - 1)
-	  local charsTilStrongEnd = (strongPos - 1) + #strongString
-	  if charsTilStrongEnd <= maxChars then
+
+	  if #strongString <= maxChars then
 		 -- case #1 snippet including highlighted string will fit
-		 stdscr:addstr(snippet:sub(1, strongPos - 1))
 		 stdscr:attron(curses.A_BOLD)
 		 stdscr:attron(curses.color_pair(1))
 		 stdscr:addstr(strongString)
 		 stdscr:attron(curses.color_pair(2))
 		 stdscr:attroff(curses.A_BOLD)
-		 maxChars = maxChars - charsTilStrongEnd
+
+		 maxChars = maxChars - #strongString
 		 snippet = snippet:sub(snippet:find("</strong>") + #"</strong>")
+	  elseif #strongString > 10 then
+		 -- case #2 highlight spans lines (display this part of it non-boldly)
+		 -- we only split highlighted strings greater than 10 chars
+		 stdscr:attron(curses.color_pair(1))
+		 stdscr:addstr(strongString:sub(1, maxChars))
+		 stdscr:attron(curses.color_pair(2))
+
+		 snippet = string.format("<strong>%s%s",
+								 strongString:sub(maxChars + 1),
+								 snippet:sub(snippet:find("</strong>")))
+		 maxChars = 0
 	  else
-		 -- case #2 only snippet without bold will fit
-		 stdscr:addstr(snippet:sub(1, strongPos - 1), maxChars)
-		 maxChars = maxChars - (strongPos - 1)
+		 -- case #3 only snippet without highlight fit
 		 snippet = snippet:sub(strongPos)
 	  end
    end
