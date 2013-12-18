@@ -10,9 +10,11 @@ use IO::File;
 use Mail::Box::Manager;
 use POSIX qw(strftime);
 use XML::Writer;
+use utf8;
 
 my $outdir = $ARGV[1];
 my $indir = $ARGV[0];
+$indir =~ s/\/$//;
 
 # create a string from an array of email addresses
 sub x {
@@ -29,6 +31,10 @@ sub write_field {
 	my $writer = shift;
 	my $fieldName = shift;
 	my $data = shift;
+
+	# http://stackoverflow.com/questions/15689819/code-point-u0008-is-not-a-valid-character-in-xml-in-perl-script
+	$data =~ s/[\x00-\x08\x0B-\x0C\x0E-\x1F]//g;
+
 	$writer->startTag($fieldName);
 	$writer->characters($data);
 	$writer->endTag($fieldName);
@@ -51,7 +57,12 @@ foreach my $msg ($folder->messages) {
 	my $cc = x([$msg->cc]);
 	my $date = strftime('%a %b %e %H:%M:%S %Y', localtime($msg->timestamp));
 	my $msgId = $msg->messageId;
-	my $body = $msg->decoded;
+
+	# build body of text based message parts
+	my $body;
+	for my $part ( $msg->parts(sub { return $_->contentType =~ /text/ }) ) {
+		$body .= $part->decoded;
+	}
 
 	if (0) {
 		print '-------------------------------\n';
