@@ -67,8 +67,11 @@ function printWithBold(snippet, maxChars)
 								 strongString:sub(maxChars + 1),
 								 snippet:sub(snippet:find("</strong>")))
 		 maxChars = 0
+	  elseif strongPos == 1 then
+		 -- case #3 highlighted part is at the very beginning and won't fit
+		 break
 	  else
-		 -- case #3 only snippet without highlight fit
+		 -- case #4 only snippet without highlight fits
 		 snippet = snippet:sub(strongPos)
 	  end
    end
