@@ -25,21 +25,32 @@ local indexes = {"../email_v1_index"} -- global
 
 io.output("/tmp/indri_query_debug.txt")
 
-function printWithBold(snippet, maxChars)
+function cleanupString(str)
+   if type(str) ~= "string" or not str then
+	  return str
+   end
+   str = str:gsub("<strong>...</strong>", "...")
+   str = str:gsub("&lt;", "<")
+   str = str:gsub("&gt;", ">")
+   str = str:gsub("&amp;", "&")
+   return str
+end
+
+function printWithBold(scr, snippet, maxChars)
    while maxChars > 0 do
 	  io.write(string.format("1: maxChars = %d\n", maxChars))
 	  io.write(string.format("1: snippet = %20s\n", snippet))
 	  local strongPos = snippet:find("<strong>")
 	  -- just print it if it's out of our range
 	  if not strongPos or strongPos >= maxChars then
-		 stdscr:addstr(snippet, maxChars)
+		 scr:addstr(snippet, maxChars)
 		 snippet = snippet:sub(maxChars + 1)
 		 maxChars = 0
 		 break
 	  end
 
 	  -- first print the non-bold section
-	  stdscr:addstr(snippet:sub(1, strongPos - 1), maxChars)
+	  scr:addstr(snippet:sub(1, strongPos - 1), maxChars)
 	  maxChars = maxChars - (strongPos - 1)
 
 	  -- handle different possibilities of highlighted strings
@@ -48,20 +59,20 @@ function printWithBold(snippet, maxChars)
 
 	  if #strongString <= maxChars then
 		 -- case #1 snippet including highlighted string will fit
-		 stdscr:attron(curses.A_BOLD)
-		 stdscr:attron(curses.color_pair(1))
-		 stdscr:addstr(strongString)
-		 stdscr:attron(curses.color_pair(2))
-		 stdscr:attroff(curses.A_BOLD)
+		 scr:attron(curses.A_BOLD)
+		 scr:attron(curses.color_pair(1))
+		 scr:addstr(strongString)
+		 scr:attron(curses.color_pair(2))
+		 scr:attroff(curses.A_BOLD)
 
 		 maxChars = maxChars - #strongString
 		 snippet = snippet:sub(snippet:find("</strong>") + #"</strong>")
 	  elseif #strongString > 10 then
 		 -- case #2 highlight spans lines (display this part of it non-boldly)
 		 -- we only split highlighted strings greater than 10 chars
-		 stdscr:attron(curses.color_pair(1))
-		 stdscr:addstr(strongString:sub(1, maxChars))
-		 stdscr:attron(curses.color_pair(2))
+		 scr:attron(curses.color_pair(1))
+		 scr:addstr(strongString:sub(1, maxChars))
+		 scr:attron(curses.color_pair(2))
 
 		 snippet = string.format("<strong>%s%s",
 								 strongString:sub(maxChars + 1),
@@ -93,18 +104,14 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
    for i = 3, maxy - 4 do
 	  stdscr:move(i, 0)
 	  if nextLine then
-		 printWithBold(nextLine, maxx - 2)
+		 printWithBold(stdscr, nextLine, maxx - 2)
 		 nextLine = nil
 	  else
 		 local entry = qr:nextRawEntry()
 		 if entry == nil then
 			break
 		 end
-		 local snippet = entry.snippet
-		 snippet = snippet:gsub("<strong>...</strong>", "...")
-		 snippet = snippet:gsub("&lt;", "<")
-		 snippet = snippet:gsub("&gt;", ">")
-		 snippet = snippet:gsub("&amp;", "&")
+		 local snippet = cleanupString(entry.snippet)
 		 local totalChars = maxx -- chars we have left (rename this var)
 		 if entry.position == selectedItem then
 			stdscr:attron(curses.color_pair(3))
@@ -119,7 +126,7 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
 
 		 stdscr:addstr("| ")
 		 totalChars = totalChars - 2
-		 snippet = printWithBold(snippet, totalChars - 2)
+		 snippet = printWithBold(stdscr, snippet, totalChars - 2)
 
 		 if #snippet > 10 then
 			nextLine = string.rep(" ", maxx - totalChars) .. snippet
@@ -136,6 +143,40 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
    stdscr:mvaddstr(1, 0, status)
 
    stdscr:refresh()
+end
+
+function showEntry(entry)
+   local linesInEntryWin = maxy - 6
+   local entryWin = curses.newwin(linesInEntryWin, maxx - 40, 3, 20)
+   entryWin:box("|", "-")
+   local line = 1
+   local maxCharsPerValue = maxx - (40 + 4 + 10 + 2)
+   local skipKeys = {snippet = true, content = true, text = true}
+   for k, v in pairs(entry) do
+	  if not skipKeys[k] then
+		 entryWin:mvaddstr(line, 2,
+						   string.format("%10s: %s", k, cleanupString(v)),
+						   maxCharsPerValue)
+		 line = line + 1
+	  end
+   end
+   entryWin:mvaddstr(line, 2, string.format("%10s: ", "snippet"))
+   local snippet = cleanupString(entry.snippet)
+   while line <= linesInEntryWin and snippet ~= "" do
+	  entryWin:move(line, 14)
+	  snippet = printWithBold(entryWin, snippet, maxCharsPerValue)
+	  line = line + 1
+   end
+
+   entryWin:mvaddstr(line, 2, string.format("%10s: ", "text"))
+   snippet = cleanupString(entry.text)
+   entryWin:mvaddstr(line, 14, snippet)
+
+   entryWin:refresh()
+   entryWin:getch()
+   entryWin:clear()
+   entryWin:refresh()
+   entryWin:close()
 end
 
 function doQuery()
@@ -227,7 +268,11 @@ function doQuery()
 			prevPage()
 		 end
 	  elseif keyname == "^J" then
-		 -- TODO display item in separate window
+		 stdscr:clear()
+		 stdscr:refresh()
+		 showEntry(qr:entry(selectedItem))
+		 -- refresh page
+		 showPage(currentPage, pageMinIndex, qr, selectedItem)
 	  end
    end
 

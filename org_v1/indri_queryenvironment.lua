@@ -15,14 +15,17 @@ function QueryResult.new(qe, qaptr, queryString)
    return self
 end
 
+function QueryResult:entry(n)
+   local entry = indri_qa_get_complete_result_entry(self.qe.qeptr, self.qaptr, n - 1)
+   entry.position = n
+   return entry
+end
+
 function QueryResult:nextRawEntry()
    if self.position > self.count or self.position < 1 then
 	  return nil
    end
-   local res = indri_qa_get_complete_result_entry(self.qe.qeptr,
-												  self.qaptr,
-												  self.position - 1)
-   res.position = self.position
+   local res = self:entry(self.position)
    self.position = self.position + 1
    return res
 end

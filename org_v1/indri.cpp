@@ -103,11 +103,10 @@ int indri_qa_get_complete_result_entry(lua_State *L)
   SnippetBuilder builder(true);
   lua_pushstring(L, builder.build(extents[0].document, pdocs[0], qa).c_str());
   lua_setfield(L, -2, "snippet");
-  // lua_pushstring(L, pdocs[0]->content);
-  // lua_setfield(L, -2, "content");
-  // // are both content and text relevant?
-  // lua_pushstring(L, pdocs[0]->text);
-  // lua_setfield(L, -2, "text");
+  lua_pushstring(L, pdocs[0]->content);
+  lua_setfield(L, -2, "content");
+  lua_pushstring(L, pdocs[0]->text);
+  lua_setfield(L, -2, "text");
 
   // this is all... in need of clarification
   // are fields stored verbatim???
