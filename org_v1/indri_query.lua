@@ -119,7 +119,7 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
 		 stdscr:addstr(string.format("%4d ", entry.position))
 		 totalChars = totalChars - 5
 		 local titleChars = math.floor(maxx * 0.3)
-		 stdscr:addstr(entry.title, titleChars)
+		 stdscr:addstr(cleanupString(entry.title), titleChars)
 		 stdscr:attron(curses.color_pair(2))
 		 totalChars = totalChars - titleChars
 		 stdscr:move(i, maxx - totalChars)
@@ -146,34 +146,80 @@ function showPage(pageNum, pageMinIndex, qr, selectedItem)
 end
 
 function showEntry(entry)
+   -- 3 lines padding on top and bottom
+   -- 20 cols padding on left/right
    local linesInEntryWin = maxy - 6
+   local colsInEntryWin = maxx - 40
    local entryWin = curses.newwin(linesInEntryWin, maxx - 40, 3, 20)
+   entryWin:keypad(true)
    entryWin:box("|", "-")
    local line = 1
-   local maxCharsPerValue = maxx - (40 + 4 + 10 + 2)
+   local charsPerKey = 10 + 2 -- 10 + 2 for the "   key: "
+   local maxCharsPerValue = colsInEntryWin - (charsPerKey + 4) -- minus 2 for padding, 2 for borders
    local skipKeys = {snippet = true, content = true, text = true}
    for k, v in pairs(entry) do
 	  if not skipKeys[k] then
 		 entryWin:mvaddstr(line, 2,
 						   string.format("%10s: %s", k, cleanupString(v)),
-						   maxCharsPerValue)
+						   charsPerKey + maxCharsPerValue)
 		 line = line + 1
 	  end
    end
    entryWin:mvaddstr(line, 2, string.format("%10s: ", "snippet"))
    local snippet = cleanupString(entry.snippet)
    while line <= linesInEntryWin and snippet ~= "" do
-	  entryWin:move(line, 14)
+	  entryWin:move(line, charsPerKey + 2) -- 2 for left side padding/border
 	  snippet = printWithBold(entryWin, snippet, maxCharsPerValue)
 	  line = line + 1
    end
 
    entryWin:mvaddstr(line, 2, string.format("%10s: ", "text"))
-   snippet = cleanupString(entry.text)
-   entryWin:mvaddstr(line, 14, snippet)
-
    entryWin:refresh()
-   entryWin:getch()
+
+   -- separate window to contain/position the text
+   local textWinBeginY = 3 + line
+   local textWinLines = linesInEntryWin - line - 1
+   local textWin = curses.newwin(textWinLines, maxCharsPerValue, textWinBeginY, 20 + 14)
+   local textLines = {}
+   for line in cleanupString(entry.text):gmatch("[^\r\n]+") do
+	  table.insert(textLines, line)
+	  io.write("LINE = ", line)
+   end
+   local textDisplayMinLine = 0
+
+   local showTextMinLine = function (line)
+	  textWin:clear()
+	  textWin:refresh()
+	  for i = 0, textWinLines - 1 do
+		 textWin:mvaddstr(i, 0, textLines[1 + line + i] or "")
+	  end
+	  textWin:refresh()
+   end
+
+   showTextMinLine(textDisplayMinLine)
+
+   -- process commands
+   while true do
+	  local k = entryWin:getch()
+	  local keyname = curses.keyname(k)
+	  if keyname == "q" then
+		 break
+	  elseif keyname == "KEY_DOWN" then
+		 if textDisplayMinLine + textWinLines < #textLines then
+			textDisplayMinLine = textDisplayMinLine + 1
+			showTextMinLine(textDisplayMinLine)
+		 end
+	  elseif keyname == "KEY_UP" then
+		 if textDisplayMinLine > 0 then
+			textDisplayMinLine = textDisplayMinLine - 1
+			showTextMinLine(textDisplayMinLine)
+		 end
+	  end
+   end
+
+   textWin:clear()
+   textWin:refresh()
+   textWin:close()
    entryWin:clear()
    entryWin:refresh()
    entryWin:close()
@@ -226,6 +272,7 @@ function doQuery()
 		 currentPage = currentPage + 1
 		 selectedItem = qr.position
 		 showPage(currentPage, pageMinIndex, qr, selectedItem)
+		 return true
 	  end
    end
 
@@ -234,6 +281,7 @@ function doQuery()
 		 selectedItem = pageMinIndex[currentPage] - 1
 		 currentPage = currentPage - 1
 		 showPage(currentPage, pageMinIndex, qr, selectedItem)
+		 return true
 	  end
    end
 
@@ -249,9 +297,15 @@ function doQuery()
 	  if keyname == "q" then
 		 break
 	  elseif keyname == "KEY_NPAGE" then
-		 nextPage()
+		 if not nextPage() then
+			selectedItem = qr.count
+			showPage(currentPage, pageMinIndex, qr, selectedItem)
+		 end
 	  elseif keyname == "KEY_PPAGE" then
-		 prevPage()
+		 if not prevPage() then
+			selectedItem = 1
+			showPage(currentPage, pageMinIndex, qr, selectedItem)
+		 end
 	  elseif keyname == "KEY_DOWN" then
 		 if selectedItem + 1 < qr.position then
 			selectedItem = selectedItem + 1
