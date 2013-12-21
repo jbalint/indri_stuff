@@ -151,7 +151,6 @@ function showEntry(entry)
    local linesInEntryWin = maxy - 6
    local colsInEntryWin = maxx - 40
    local entryWin = curses.newwin(linesInEntryWin, maxx - 40, 3, 20)
-   entryWin:keypad(true)
    entryWin:box("|", "-")
    local line = 1
    local charsPerKey = 10 + 2 -- 10 + 2 for the "   key: "
@@ -180,8 +179,13 @@ function showEntry(entry)
    local textWinBeginY = 3 + line
    local textWinLines = linesInEntryWin - line - 1
    local textWin = curses.newwin(textWinLines, maxCharsPerValue, textWinBeginY, 20 + 14)
+   textWin:keypad(true)
    local textLines = {}
    for line in cleanupString(entry.text):gmatch("[^\r\n]+") do
+	  while #line > maxCharsPerValue do
+		 table.insert(textLines, line:sub(1, maxCharsPerValue))
+		 line = line:sub(maxCharsPerValue + 1)
+	  end
 	  table.insert(textLines, line)
 	  io.write("LINE = ", line)
    end
@@ -200,20 +204,35 @@ function showEntry(entry)
 
    -- process commands
    while true do
-	  local k = entryWin:getch()
+	  local k = textWin:getch()
 	  local keyname = curses.keyname(k)
+	  if keyname == "^[" then
+		 keyname = keyname .. curses.keyname(entryWin:getch())
+	  end
 	  if keyname == "q" then
 		 break
-	  elseif keyname == "KEY_DOWN" then
+	  elseif keyname == "KEY_DOWN" or keyname == "^N" then
 		 if textDisplayMinLine + textWinLines < #textLines then
 			textDisplayMinLine = textDisplayMinLine + 1
 			showTextMinLine(textDisplayMinLine)
 		 end
-	  elseif keyname == "KEY_UP" then
+	  elseif keyname == "KEY_UP" or keyname == "^P" then
 		 if textDisplayMinLine > 0 then
 			textDisplayMinLine = textDisplayMinLine - 1
 			showTextMinLine(textDisplayMinLine)
 		 end
+	  elseif keyname == "KEY_NPAGE" or keyname == "^V" then
+		 textDisplayMinLine = textDisplayMinLine + (textWinLines - 1)
+		 if textDisplayMinLine > #textLines - textWinLines then
+			textDisplayMinLine = #textLines - textWinLines
+		 end
+		 showTextMinLine(textDisplayMinLine)
+	  elseif keyname == "KEY_PPAGE" or keyname == "^[v" then
+		 textDisplayMinLine = textDisplayMinLine - (textWinLines - 1)
+		 if textDisplayMinLine < 0 then
+			textDisplayMinLine = 0
+		 end
+		 showTextMinLine(textDisplayMinLine)
 	  end
    end
 
