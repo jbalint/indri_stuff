@@ -8,6 +8,17 @@
 	<path>tmp</path>
 	<class>trectext</class>
   </corpus>
+
+  <!-- allow retrival of exact (not-stemmed) field values as metadata -->
+  <metadata>
+	<field>from</field>
+	<field>to</field>
+	<field>cc</field>
+	<field>date</field>
+	<field>folder</field>
+	<field>account</field>
+  </metadata>
+
   <field><name>title</name></field>
   <field><name>from</name></field>
   <field><name>to</name></field>

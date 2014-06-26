@@ -18,3 +18,5 @@ Email Indexing
 ** Should the individual emails be displayed in Emacs/Wanderlust?
 * Results Presentation
 ** Retrieve info from non-text db
+* Continuing work
+** TODO Make sure the DATE format is correct for Indri
